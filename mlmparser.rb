@@ -227,8 +227,9 @@ while (line = f.gets)
       ins[:unit] = $2.to_s.upcase
       ins[:name] = $3.to_s.downcase
     elsif line.match(/^\s+(\d+\S*|\.\S+)\s{2,}(\S+.*)\s*$/)
-      ins[:unit] = $1.to_s.upcase
+      ins[:amount] = $1
       ins[:name] = $2.to_s.downcase
+      ins[:unit] = ""
     elsif line.match(/^\s*\-\s*(\S+.*)\s*$/)
       #mr.ingredients[-1][:name].gsub!(/\n/,"")
       mr.ingredients[-1][:name] += " " + $1.to_s.downcase
