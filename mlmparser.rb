@@ -1,16 +1,5 @@
 #!/usr/local/rvm/rubies/ruby-2.1.0/bin/ruby
 
-# useless the shebang in windows, but I'm use to it
-
-# workflow
-# validate file exist
-# open file
-# parse header
-# parse ingredients
-# parse preparation
-# parse other headers
-# gen xml
-
 require 'rubygems'
 require 'dbi'
 
@@ -40,8 +29,6 @@ class MyRecipe
     self.instructions = String.new()
   end
   def openf
-    #@file = File.new(@ofile,"r")
-    #File.new(@ofile,"r",:encoding => "UTF-8")
     File.new(@ofile,"r")
   end
   def close
@@ -56,10 +43,6 @@ class MyRecipe
     return TRUE
   end
   def setDefaults
-    #if self.title != ""
-      #self.title.gsub!(/\s+/,"_")
-      #self.title.gsub!(/'/,"")
-    #end
   end
   def secureName(n)
     "r" + n.gsub(/\'|\s+|\,|\.|_|\(|\)|\*|\-/,"")
@@ -81,7 +64,6 @@ class MyRecipe
     self.setDefaults
     dbh = DBI.connect("DBI:SQLite3:/home/matias/cookbook/db/development.sqlite3")
     dbh = DBI.connect("DBI:SQLite3:/home/matias/cookbook/db/production.sqlite3")
-    #dbh = DBI.connect("DBI:SQLite2:/var/www/web2-work/MyCookBook-akelos/config/MyCookBook-akelos_dev-OifEg8Mb.sqlite")
     @recipeCount+=1
     if @format.match(/out1/)
       puts "Title: '#{ self.title }'"
@@ -92,7 +74,6 @@ class MyRecipe
       puts "--"
       puts "instructions: #{self.instructions}"
       puts "-------------"
-      #mfile = File.new
     elsif @format.match(/fixture/)
       fr = File.open("recipes.yml","a+")
       fc = File.open("categories.yml","a+")
@@ -127,7 +108,6 @@ class MyRecipe
     elsif @format.match(/sql/)
       puts "insert into recipes (id,title,yield,instructions,created_at,updated_at) values (\"#{@recipeCount}\", \"#{self.title}\", \"#{self.yield}\", \"#{self.instructions}\", \"#{@date}\", \"#{@date}\");"
       self.cat.each do |mycat|
-        #puts "insert into categories (name,recipe_id,created_at,updated_at) values (\"#{mycat}\",\"#{@recipeCount}\",\"#{@date}\",\"#{@date}\");"
         # this is to habtm categories and recipes
         unless catCreated? mycat 
           puts "insert into categories (id,name,created_at,updated_at) values (\"#{@catCount}\",\"#{mycat}\",\"#{@date}\",\"#{@date}\");"
@@ -161,18 +141,11 @@ mr.format = "hash"
 f = mr.openf
 part = 0
 
-#f.each{|line|
 while (line = f.gets)
-  #puts "#{$.} -> part #{part} -- #{ line}" # -- EOR::#{mr.eor}"
-  #line.gsub!(/\r\n/m,"\n")
-  #p "eor match '#{line.scan(mr.eor)}'"
   if line.match(mr.eor)
-  #if line.match(/^M{5}\s*$/)
-    #p "got the mmr.eor"
     mr.dumpFile
     next
   end
-  #if line=~/^\s*$/ && part != 3
   if line=~/^\s*$/
     #puts "#{$.} -> part #{part} -- #{ line}"
     if part != 3
@@ -219,8 +192,6 @@ while (line = f.gets)
       #puts "#{$.} -> part #{part} -- #{ line}"
       t = Array.new()
       ins = Hash.new()
-    #part+=1 if line=~/^\s*$/
-    #puts $..to_s + " " + line
     lp = '^\s*(\d+\S*|\.\S+|\d+\/\d+)\s(' + mr.mpat + ')\s+(.+)\s*$'
     lp2 = '^\s*(\d+\s+\d+\/\d+)\s(' + mr.mpat + ')\s+(.+)\s*$'
     if line.match(lp)
@@ -236,32 +207,25 @@ while (line = f.gets)
       ins[:name] = $2.to_s.strip.downcase
       ins[:unit] = ""
     elsif line.match(/^\s*\-\s*(\S+.*)\s*$/)
-      #mr.ingredients[-1][:name].gsub!(/\n/,"")
       mr.ingredients[-1][:name] += " " + $1.to_s.strip.downcase
       next
     else
       ins[:name] = line.to_s.strip.downcase
-      #ins[:name].gsub!(/^\s*/,"")
-      #ins[:name].gsub!(/\s*$/,"")
     end
     ins[:name].gsub!(/^-/,"")
     ins[:name].gsub!(/;|\(|\)/,"")
     ins[:name].gsub!(/(\d+)\"/,'\1 inch')
     t << ins
     mr.ingredients << ins
-    #puts "part #{part}"
   # the last part
   elsif part == 3
-    #puts "part #{part}"
     mr.instructions += line.strip + "\n"
   else
-    #puts "Hell becoming"
+    # this means that something went really wrong
     puts "parts in Hell are #{part}"
   end  
   
 end
 
-#mr.dumpFile
 f.close
-#mr.finalDump
 
