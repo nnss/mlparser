@@ -1,4 +1,4 @@
-#!/usr/local/rvm/rubies/ruby-1.9.3-p194/bin/ruby
+#!/usr/local/rvm/rubies/ruby-2.1.0/bin/ruby
 
 # useless the shebang in windows, but I'm use to it
 
@@ -23,8 +23,8 @@ class MyRecipe
     @catCount = 0
     @user_id = 1
     #@file
-    self.mpat = "t|T|ea|c|x|lb|oz|tb|ts|lg|pn|sm|bn"
-    self.eor = "^M{5}\s*$"
+    self.mpat = "t|T|ea|c|x|lb|oz|tb|ts|lg|pn|sm|bn|cn"
+    self.eor = /MMMMM\s*$/ # "^M{5}\s*$"
     self.ingredients = Array.new()
     self.instructions = String.new()
     @recipeCount = 0
@@ -41,6 +41,7 @@ class MyRecipe
   end
   def openf
     #@file = File.new(@ofile,"r")
+    #File.new(@ofile,"r",:encoding => "UTF-8")
     File.new(@ofile,"r")
   end
   def close
@@ -156,14 +157,18 @@ end
 
 mr = MyRecipe.new()
 mr.user_id = 1
-mr.format = "json"
+mr.format = "hash"
 f = mr.openf
 part = 0
 
 #f.each{|line|
 while (line = f.gets)
-  #puts "#{$.} -> part #{part} -- #{ line}"
+  #puts "#{$.} -> part #{part} -- #{ line}" # -- EOR::#{mr.eor}"
+  #line.gsub!(/\r\n/m,"\n")
+  #p "eor match '#{line.scan(mr.eor)}'"
   if line.match(mr.eor)
+  #if line.match(/^M{5}\s*$/)
+    #p "got the mmr.eor"
     mr.dumpFile
     next
   end
@@ -197,13 +202,13 @@ while (line = f.gets)
 
   if part == 1
     if line=~/^\s*Title\s*:\s*(.*)\s*$/i
-      mr.title = $1
+      mr.title = $1.strip
     elsif line=~/^\s*Categories\s*:\s*(.*)\s*$/i
       t = Array.new()
-      $1.split(/\s*,\s*/).each{|x| t << x.gsub(/\.|\!|\*|\||\\/,"") }
+      $1.split(/\s*,\s*/).each{|x| t << x.gsub(/\.|\!|\*|\||\\/,"").strip }
       mr.cat = t
     elsif line=~/^\s*Yield\s*:\s*(.+)\s*$/i
-      mr.yield = $1
+      mr.yield = $1.strip
     end
   # the ingredients part
   elsif part == 2
@@ -217,27 +222,27 @@ while (line = f.gets)
     #part+=1 if line=~/^\s*$/
     #puts $..to_s + " " + line
     lp = '^\s*(\d+\S*|\.\S+|\d+\/\d+)\s(' + mr.mpat + ')\s+(.+)\s*$'
-    lp2 = '^\s*(\d+\s+\d\/\d+)\s(' + mr.mpat + ')\s+(.+)\s*$'
+    lp2 = '^\s*(\d+\s+\d+\/\d+)\s(' + mr.mpat + ')\s+(.+)\s*$'
     if line.match(lp)
-       ins[:amount] = $1
-       ins[:unit] = $2.to_s.upcase
-       ins[:name] = $3.to_s.downcase
+       ins[:amount] = $1.strip
+       ins[:unit] = $2.to_s.strip.upcase
+       ins[:name] = $3.to_s.strip.downcase
     elsif line.match(lp2)
-      ins[:amount] = $1
-      ins[:unit] = $2.to_s.upcase
-      ins[:name] = $3.to_s.downcase
+      ins[:amount] = $1.strip
+      ins[:unit] = $2.to_s.strip.upcase
+      ins[:name] = $3.to_s.strip.downcase
     elsif line.match(/^\s+(\d+\S*|\.\S+)\s{2,}(\S+.*)\s*$/)
-      ins[:amount] = $1
-      ins[:name] = $2.to_s.downcase
+      ins[:amount] = $1.strip
+      ins[:name] = $2.to_s.strip.downcase
       ins[:unit] = ""
     elsif line.match(/^\s*\-\s*(\S+.*)\s*$/)
       #mr.ingredients[-1][:name].gsub!(/\n/,"")
-      mr.ingredients[-1][:name] += " " + $1.to_s.downcase
+      mr.ingredients[-1][:name] += " " + $1.to_s.strip.downcase
       next
     else
-      ins[:name] = line.to_s.downcase
-      ins[:name].gsub!(/^\s*/,"")
-      ins[:name].gsub!(/\s*$/,"")
+      ins[:name] = line.to_s.strip.downcase
+      #ins[:name].gsub!(/^\s*/,"")
+      #ins[:name].gsub!(/\s*$/,"")
     end
     ins[:name].gsub!(/^-/,"")
     ins[:name].gsub!(/;|\(|\)/,"")
@@ -248,7 +253,7 @@ while (line = f.gets)
   # the last part
   elsif part == 3
     #puts "part #{part}"
-    mr.instructions += "    " + line
+    mr.instructions += line.strip + "\n"
   else
     #puts "Hell becoming"
     puts "parts in Hell are #{part}"
@@ -258,5 +263,5 @@ end
 
 #mr.dumpFile
 f.close
-mr.finalDump
+#mr.finalDump
 
