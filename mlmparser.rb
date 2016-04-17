@@ -1,4 +1,15 @@
-#!/usr/local/rvm/rubies/ruby-2.1.0/bin/ruby
+#!/usr/local/rvm/rubies/ruby-2.1.1/bin/ruby
+# encoding: utf-8
+
+
+####
+#
+# A site with file definitions:
+#     * http://www.wedesoft.de/anymeal-api/mealmaster.html
+#
+#
+####
+
 
 require 'rubygems'
 require 'dbi'
@@ -29,7 +40,7 @@ class MyRecipe
     self.instructions = String.new()
   end
   def openf
-    File.new(@ofile,"r")
+    File.new(@ofile,"rb")
   end
   def close
     @file.close
@@ -62,8 +73,6 @@ class MyRecipe
   end
   def dumpFile
     self.setDefaults
-    dbh = DBI.connect("DBI:SQLite3:/home/matias/cookbook/db/development.sqlite3")
-    dbh = DBI.connect("DBI:SQLite3:/home/matias/cookbook/db/production.sqlite3")
     @recipeCount+=1
     if @format.match(/out1/)
       puts "Title: '#{ self.title }'"
@@ -95,6 +104,8 @@ class MyRecipe
       end
       fr.syswrite "  instructions: |\n#{self.instructions}\n\n"
     elsif @format.match(/sqlite/)
+      dbh = DBI.connect("DBI:SQLite3:/home/matias/cookbook/db/development.sqlite3")
+      #dbh = DBI.connect("DBI:SQLite3:/home/matias/cookbook/db/production.sqlite3")
       sth = dbh.prepare("insert into recipes (id,title,yield,instructions,created_at,updated_at) values (?,?,?,?,?,?)")
       sth.execute(@recipeCount, self.title, self.yield, self.instructions, @date, @date)
       self.cat.each do |mycat|
@@ -189,6 +200,10 @@ while (line = f.gets)
       if line.match(/^\s*INGRED/i)
         next
       end
+      if mr.ingredients[-1].nil? && line.match(/^\s+-/)
+        p "debug:::-> #{line}"
+        next
+      end
       #puts "#{$.} -> part #{part} -- #{ line}"
       t = Array.new()
       ins = Hash.new()
@@ -207,6 +222,7 @@ while (line = f.gets)
       ins[:name] = $2.to_s.strip.downcase
       ins[:unit] = ""
     elsif line.match(/^\s*\-\s*(\S+.*)\s*$/)
+      p mr.ingredients[-1].class
       mr.ingredients[-1][:name] += " " + $1.to_s.strip.downcase
       next
     else
